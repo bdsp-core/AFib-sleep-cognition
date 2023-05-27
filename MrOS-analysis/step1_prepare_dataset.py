@@ -27,8 +27,8 @@ df = df_vs1_eeg.merge(df_vs1_sleep[[
         'ID', 'POSTDYDT', 'POAHI3', 'POAHI4', 'POAVGPLM'
     ]].rename(columns={
         'POSTDYDT':'date_PSG',
-        'POAHI3':'L_AHI3%',
-        'POAHI4':'L_AHI4%',
+        'POAHI3':'L_AHI3',
+        'POAHI4':'L_AHI4',
         'POAVGPLM':'L_PLMI'
     }), on='ID', how='inner', validate='1:1')
 
@@ -112,6 +112,7 @@ Y_cols = [x for x in df.columns if x.startswith('Y_')]
 M_cols = [x for x in df.columns if x.startswith('M_')]
 cols = ['ID']+date_cols+A_cols+L_cols+Y_cols+M_cols
 df = df[cols]
+df = df.rename(columns={x:x.replace('N2+N3','N2N3') for x in df.columns})  # R cannot have + in column names
 print(df)
 df.to_excel('dataset.xlsx', index=False)
 
