@@ -65,7 +65,7 @@ write.csv(res.avg, "{resultpath2}", row.names=FALSE)
     os.remove(datapath)
     os.remove(resultpath)
 
-    return res.loc[0,'estimate'], (res.loc[0,'conf.low'], res.loc[0,'conf.high']), res.loc[0,'p.value'], res.loc[0,'low'], res.loc[0,'high']
+    return res.loc[0,'estimate'], (res.loc[0,'conf.low'], res.loc[0,'conf.high']), res.loc[0,'p.value'], res.loc[0,'low'], res.loc[0,'high']  # not per-sample prediction
 
 
 class MyBartRegressor(BaseEstimator, RegressorMixin):
@@ -169,9 +169,9 @@ def adj_bart(A, L, Y, random_state=None, verbose=False):
     Y_A0 = Y_A01[:N]; Y_A1 = Y_A01[N:]
     Y_A0_bt = Y_A01_bt[:,:N]; Y_A1_bt = Y_A01_bt[:,N:]
 
-    Y_A1 = Y_A1.mean(); Y_A1_bt = Y_A1_bt.mean(axis=1)
-    Y_A0 = Y_A0.mean(); Y_A0_bt = Y_A0_bt.mean(axis=1)
-    te = Y_A1 - Y_A0
+    Y_A1_bt = Y_A1_bt.mean(axis=1)
+    Y_A0_bt = Y_A0_bt.mean(axis=1)
+    te = Y_A1.mean() - Y_A0.mean()
     te_bt = Y_A1_bt - Y_A0_bt
     ci = np.percentile(te_bt, (2.5,97.5), axis=0)
     pval = 2*min((te_bt<0).mean(), (te_bt>0).mean())
@@ -186,8 +186,8 @@ def adj_linreg(A, L, Y, random_state=None, verbose=False):
     te =  res.params[0]
     ci =  res.conf_int().values[0]
     pval =  res.pvalues[0]
-    Y_A0 = res.predict(np.c_[np.zeros(N),L,np.ones(N)]).mean()
-    Y_A1 = res.predict(np.c_[np.ones(N),L,np.ones(N)]).mean()
+    Y_A0 = res.predict(np.c_[np.zeros(N),L,np.ones(N)])
+    Y_A1 = res.predict(np.c_[np.ones(N),L,np.ones(N)])
     return te, ci, pval, Y_A0, Y_A1
 
 
@@ -207,9 +207,9 @@ def ipw(A, L, Y, random_state=None, verbose=False):
         Ybt = Y[ids]
         pmodel = LogisticRegression(penalty=None, max_iter=1000).fit(Lbt,Abt)
         Ap = pmodel.predict_proba(Lbt)[:,1]
-        Y_A1 = np.mean(Ybt*(Abt==1).astype(float)/Ap)
-        Y_A0 = np.mean(Ybt*(Abt==0).astype(float)/(1-Ap))
-        return Y_A1 - Y_A0, Y_A0, Y_A1
+        Y_A1 = Ybt*(Abt==1).astype(float)/Ap
+        Y_A0 = Ybt*(Abt==0).astype(float)/(1-Ap)
+        return Y_A1.mean() - Y_A0.mean(), Y_A0, Y_A1
     with Parallel(n_jobs=n_jobs, verbose=False) as par:
         res = par(delayed(_func)(bti) for bti in tqdm(range(Nbt+1), disable=not verbose))
     te, Y_A0, Y_A1 = res[0]
@@ -249,7 +249,7 @@ def msm(A, L, Y, random_state=None, verbose=False):
     te_bt = np.array([x[0] for x in res[1:]])
     ci = np.percentile(te_bt, (2.5,97.5))
     pval = 2*min((te_bt<0).mean(), (te_bt>0).mean())
-    return te, ci, pval, Y_A0, Y_A1
+    return te, ci, pval, Y_A0, Y_A1  # not per-sample prediction
 
 
 def dr(A, L, Y, random_state=None, verbose=False):
@@ -276,9 +276,7 @@ def dr(A, L, Y, random_state=None, verbose=False):
         yp1 = ymodel.predict(np.c_[np.ones(N),Lbt])
         Y_A0 = (Ybt-yp0)*(Abt==0).astype(float)/Ap[:,0] + yp0
         Y_A1 = (Ybt-yp1)*(Abt==1).astype(float)/Ap[:,1] + yp1
-        Y_A0 = Y_A0.mean()
-        Y_A1 = Y_A1.mean()
-        return Y_A1-Y_A0, Y_A0, Y_A1
+        return Y_A1.mean()-Y_A0.mean(), Y_A0, Y_A1
     with Parallel(n_jobs=n_jobs, verbose=False) as par:
         res = par(delayed(_func)(bti) for bti in tqdm(range(Nbt+1), disable=not verbose))
     te, Y_A0, Y_A1 = res[0]
