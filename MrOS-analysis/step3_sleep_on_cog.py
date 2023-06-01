@@ -2,7 +2,6 @@ from itertools import product
 import pickle
 import numpy as np
 import pandas as pd
-from statsmodels.stats.multitest import multipletests
 from myfunctions import MyBartRegressor
 
 
@@ -17,8 +16,8 @@ def adj_bart2(A, L, Y, random_state=None, verbose=False):
     L = L.values
     Y = Y.values
 
-    R_path = r'D:\software\R-4.2.0\bin\Rscript'
-    n_jobs = 8
+    R_path = 'Rscript'#r'D:\software\R-4.2.0\bin\Rscript'
+    n_jobs = 16
 
     ids0 = np.where(L[:,0]==0)[0]
     model_Y_AL0 = MyBartRegressor(n_tree=100, R_path=R_path, n_jobs=n_jobs, random_state=random_state, verbose=verbose)
@@ -27,7 +26,7 @@ def adj_bart2(A, L, Y, random_state=None, verbose=False):
     model_Y_AL1 = MyBartRegressor(n_tree=100, R_path=R_path, n_jobs=n_jobs, random_state=random_state, verbose=verbose)
     model_Y_AL1.fit(np.c_[A,L[:,1:]][ids1], Y[ids1])
 
-    nA = 10
+    nA = 20
     As = np.linspace(A.min(), A.max(), nA)
 
     Y_A = np.zeros((nA,N)); Y_A_bt = np.zeros((1000,nA,N))
@@ -35,7 +34,6 @@ def adj_bart2(A, L, Y, random_state=None, verbose=False):
     y, ybt = model_Y_AL0.predict(
             np.concatenate([np.c_[np.zeros(len(ids0))+a,L[:,1:][ids0]] for a in As], axis=0),
             CI=True)
-    import pdb;pdb.set_trace()
     Y_A[:,ids0] = y.reshape(nA,-1)
     Y_A_bt[:,:,ids0] = ybt.reshape(1000,nA,-1)
 
@@ -45,20 +43,15 @@ def adj_bart2(A, L, Y, random_state=None, verbose=False):
     Y_A[:,ids1] = y.reshape(nA,-1)
     Y_A_bt[:,:,ids1] = ybt.reshape(1000,nA,-1)
 
-    Y_A1_bt = Y_A1_bt.mean(axis=1)
-    Y_A0_bt = Y_A0_bt.mean(axis=1)
-    te = Y_A1.mean() - Y_A0.mean()
-    te_bt = Y_A1_bt - Y_A0_bt
-    ci = np.percentile(te_bt, (2.5,97.5), axis=0)
-    pval = 2*min((te_bt<0).mean(), (te_bt>0).mean())
     model_Y_AL0.clear()
     model_Y_AL1.clear()
-    return te, ci, pval, Y_A0, Y_A1
+    return As, Y_A, np.percentile(Y_A_bt, (2.5,97.5), axis=0)
 
 
 def main():
     method = 'adj_bart'
     random_state = 2023
+    suffix = ''
 
     df = pd.read_excel('dataset.xlsx')
 
@@ -76,10 +69,13 @@ def main():
     Y_cols = [x for x in df.columns if x.startswith('Y_')]
 
     results = []
-    Y_As = {}
+    all_Y_As = {}
+    cc = 0
+    Niter = len(A_cols)*len(Y_cols)
     for A_col, Y_col in product(A_cols, Y_cols):
         #print(f'[{yi+1}/{len(Y_cols)}] {Y_col}')
-        print(A_col, Y_col)
+        cc += 1
+        print(f'[{cc}/{Niter}: {A_col}, {Y_col}')
         df_ = df[[A_col]+L_cols+[Y_col]].dropna()
         N = len(df_)
 
@@ -87,28 +83,33 @@ def main():
         L = df_[L_cols]
         Y = df_[Y_col]
 
-        effect, effect_ci, pval, Y0, Y1 = adj_bart2(A,L,Y, random_state=random_state, verbose=True)
+        As, Y_As, Y_As_ci = adj_bart2(A,L,Y, random_state=random_state, verbose=True)
 
         res_ = {
             'Aname':A_col, 'Yname':Y_col, 'method':method,
             'N':len(A), 
-            'effect':effect,
-            'lb':effect_ci[0], 'ub':effect_ci[1],
-            'pval':pval,
             }
         res_ = pd.DataFrame(data={k:[v] for k,v in res_.items()})
+        for ai, a in enumerate(As):
+            res_[f'A{ai}'] = a
+        for ai, a in enumerate(As):
+            res_[f'Y{ai}'] = Y_As[ai].mean()
+        for ai, a in enumerate(As):
+            res_[f'Y_lb{ai}'] = Y_As_ci[0][ai].mean()
+        for ai, a in enumerate(As):
+            res_[f'Y_ub{ai}'] = Y_As_ci[1][ai].mean()
         print(res_)
         results.append(res_)
-        Y_As[(Y_col,method)] = [Y0,Y1]
+        all_Y_As[(A_col,Y_col,method,'As')] = As
+        all_Y_As[(A_col,Y_col,method,'Y_As')] = Y_As
+        all_Y_As[(A_col,Y_col,method,'Y_As_ci')] = Y_As_ci
 
-    results = pd.concat(results, axis=0, ignore_index=True)
-    results['sig_bonf'] = (results.pval<0.05/len(results)).astype(int)
-    results['sig_fdr_bh'] = multipletests(results.pval,method='fdr_bh')[0].astype(int)
-    results = results.sort_values('pval', ignore_index=True)
-    print(results)
-    results.to_excel(f'sleep_on_cog{suffix}.xlsx', index=False)
-    with open(f'sleep_on_cog_potential_outcomes{suffix}.pickle', 'wb') as ff:
-        pickle.dump(Y_As, ff)
+        if cc%5==0 or cc==Niter:
+            all_results = pd.concat(results, axis=0, ignore_index=True)
+            #print(all_results)
+            all_results.to_excel(f'sleep_on_cog{suffix}.xlsx', index=False)
+            with open(f'sleep_on_cog{suffix}.pickle', 'wb') as ff:
+                pickle.dump(all_Y_As, ff)
 
 
 if __name__=='__main__':
