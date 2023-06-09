@@ -1,7 +1,9 @@
+import re
 from itertools import product
 import pickle
 import numpy as np
 import pandas as pd
+from scipy.stats import spearmanr
 from myfunctions import MyBartRegressor
 
 
@@ -110,6 +112,23 @@ def main():
             all_results.to_excel(f'sleep_on_cog{suffix}.xlsx', index=False)
             with open(f'sleep_on_cog{suffix}.pickle', 'wb') as ff:
                 pickle.dump(all_Y_As, ff)
+
+    # get slope pvalue
+    df = pd.concat(results, axis=0, ignore_index=True)
+    for i in tqdm(range(len(df))):
+        As = df[[x for x in df.columns if re.match(r'A\d+',x)]].iloc[i].values
+        Ys = df[[x for x in df.columns if re.match(r'Y\d+',x)]].iloc[i].values
+        rho, pval = spearmanr(As, Ys)
+        df.loc[i, 'rho'] = rho
+        df.loc[i, 'pval'] = pval
+    df = df.sort_values('pval', ignore_index=True)
+    #TODO bonferoni for each method separately
+    df['SigBonf'] = (df.pval<0.05/len(df)).astype(int)
+    cols=['Aname', 'Yname','rho', 'pval','SigBonf', 'method', 'N']
+    cols = cols + [x for x in df.columns if x not in cols]
+    df = df[cols]
+    print(df)
+    df.to_excel(f'sleep_on_cog{suffix}.xlsx', index=False)
 
 
 if __name__=='__main__':
