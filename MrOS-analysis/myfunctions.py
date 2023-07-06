@@ -9,7 +9,8 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.linear_model import LogisticRegression, LinearRegression
 import statsmodels.api as sm
 
-R_path = r'D:\software\R-4.2.0\bin\Rscript'
+#R_path = r'D:\software\R-4.2.0\bin\Rscript'
+R_path = 'Rscript'
 
 
 def matching(A, L, Y, caliper, random_state=None, verbose=False):
@@ -69,8 +70,9 @@ write.csv(res.avg, "{resultpath2}", row.names=FALSE)
 
 
 class MyBartRegressor(BaseEstimator, RegressorMixin):
-    def __init__(self, n_tree=100, R_path='Rscript', verbose=False, n_jobs=1, random_state=None):
+    def __init__(self, n_tree=100, ndpost=1000, R_path='Rscript', verbose=False, n_jobs=1, random_state=None):
         self.n_tree = n_tree
+        self.ndpost = ndpost
         self.R_path = R_path
         self.verbose = verbose
         self.n_jobs = n_jobs
@@ -104,7 +106,8 @@ df <- read.csv("{datapath2}")
 X <- df[,1:(ncol(df)-2)]
 y <- df[,ncol(df)-1]
 w <- df[,ncol(df)]
-model <- wbart(X, y, w=w, ntree={self.n_tree})
+model <- wbart(X, y, w=w, ntree={self.n_tree}, ndpost={self.ndpost},
+    printevery={self.ndpost//10})
 saveRDS(model, file="{modelpath2}")
 """)
         subprocess.check_call([self.R_path, codepath])#,
@@ -156,7 +159,7 @@ write.csv(yp, file="{resultpath2}", row.names=FALSE)
 
 
 def adj_bart(A, L, Y, random_state=None, verbose=False):
-    n_jobs = 8
+    n_jobs = 16#8
     N = len(A)
 
     model_Y_AL = MyBartRegressor(n_tree=100, R_path=R_path, n_jobs=n_jobs, random_state=random_state, verbose=verbose)
@@ -192,8 +195,8 @@ def adj_linreg(A, L, Y, random_state=None, verbose=False):
 
 
 def ipw(A, L, Y, random_state=None, verbose=False):
-    Nbt = 10000
-    n_jobs = 8
+    Nbt = 1000
+    n_jobs = 16#8
     np.random.seed(random_state)
     N = len(A)
     A = A.values; L = L.values; Y = Y.values
@@ -220,8 +223,8 @@ def ipw(A, L, Y, random_state=None, verbose=False):
 
 
 def msm(A, L, Y, random_state=None, verbose=False):
-    Nbt = 10000
-    n_jobs = 8
+    Nbt = 1000
+    n_jobs = 16#8
     np.random.seed(random_state)
     N = len(A)
     A = A.values; L = L.values; Y = Y.values
@@ -253,8 +256,8 @@ def msm(A, L, Y, random_state=None, verbose=False):
 
 
 def dr(A, L, Y, random_state=None, verbose=False):
-    Nbt = 10000
-    n_jobs = 8
+    Nbt = 1000
+    n_jobs = 16#8
     np.random.seed(random_state)
     N = len(A)
     A = A.values; L = L.values; Y = Y.values

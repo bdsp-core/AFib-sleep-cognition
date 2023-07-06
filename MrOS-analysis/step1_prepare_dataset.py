@@ -20,14 +20,14 @@ def main():
     df_vs1_psg_status['ID'] = df_vs1_psg_status.ID.str.decode("utf-8")
 
     df_vs1_sleep = pd.read_csv(r'D:\projects\AD_PD_prediction_from_sleep\dataset_MrOS.csv')
-    feat_cols = [x for x in df_vs1_sleep if x.split('_')[0] in ['macro','bp','sp','sw','EMG','REM','HB','log']]
+    feat_cols = [x for x in df_vs1_sleep if x.split('_')[0] in ['macro','bp','sp','sw','EMG','REM','HB']]#,'log' CPC is not accurate in AFib
     feat_cols.extend([
     #'powaso', 'potmst1p', 'potmst2p', 'potms34p', 'potmremp', 'poslpeff', 'posllatp',
     #'poavgplm', 'poavplma',
     #'poordi3', 'poordi4', 'pocai4p',
     'popcsa90', 'poai_all', ])
-    feat_cols.remove('log_CPC_l2h_XueSong')
-    feat_cols.remove('log_CPC_vl2lh_XueSong')
+    #feat_cols.remove('log_CPC_l2h_XueSong')
+    #feat_cols.remove('log_CPC_vl2lh_XueSong')
 
     cov_cols = ['vsage1',# 'v2age1', 'v3age1', 'v4age1',
     'gieduc', 'girace',
@@ -152,6 +152,10 @@ def main():
         'M_sw_slope_neg_rem_change_rel_N2N3_C',
         'M_sw_slope_pos_rem_change_rel_N2N3_C',
         'L_tusmkcgn', 'L_mhparkt'])
+    # remove colinear/duplicated columns
+    df = df.drop(columns=[
+        'tusmknow', 'dpgdsyn', 'epeds', 'vsslpmed'
+        ])
     print(df)
     df.to_excel('dataset.xlsx', index=False)
 

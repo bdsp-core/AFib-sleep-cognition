@@ -1,3 +1,4 @@
+import datetime
 import sys
 import pickle
 import numpy as np
@@ -22,6 +23,7 @@ def main(control_AHI):
 
     A_col = 'A_AF_ECG'
     L_cols = [x for x in df.columns if x.startswith('L_')]
+    print(L_cols)
     #L_caliper = {}
     Y_cols = [x for x in df.columns if x.startswith('M_')] + [x for x in df.columns if x.startswith('Y_')]
 
@@ -35,7 +37,8 @@ def main(control_AHI):
     results = []
     Y_As = {}
     for yi, Y_col in enumerate(Y_cols):
-        print(f'[{yi+1}/{len(Y_cols)}] {Y_col}')
+        now = datetime.datetime.now().strftime('%m/%d/%Y %H:%M:%S')
+        print(f'[{yi+1}/{len(Y_cols)}] {Y_col} {now}')
         df_ = df[[A_col]+L_cols+[Y_col]].dropna()
         N = len(df_)
 
