@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.neighbors import KernelDensity
 import statsmodels.api as sm
 
 #R_path = r'D:\software\R-4.2.0\bin\Rscript'
@@ -177,7 +178,11 @@ def adj_bart(A, L, Y, random_state=None, verbose=False):
     te = Y_A1.mean() - Y_A0.mean()
     te_bt = Y_A1_bt - Y_A0_bt
     ci = np.percentile(te_bt, (2.5,97.5), axis=0)
-    pval = 2*min((te_bt<0).mean(), (te_bt>0).mean())
+    robust_std = np.median(np.abs(te_bt-np.median(te_bt)))*1.4826
+    hist = KernelDensity(bandwidth=robust_std*0.2).fit(te_bt.reshape(-1,1))
+    xx = np.linspace(min(-10,te_bt.min()), max(10,te_bt.max()), 10000)
+    yy = np.exp(hist.score_samples(xx.reshape(-1,1)))
+    pval = 2*min(yy[xx>0].sum()/yy.sum(), yy[xx<0].sum()/yy.sum())
     model_Y_AL.clear()
     return te, ci, pval, Y_A0, Y_A1
 
@@ -218,7 +223,11 @@ def ipw(A, L, Y, random_state=None, verbose=False):
     te, Y_A0, Y_A1 = res[0]
     te_bt = np.array([x[0] for x in res[1:]])
     ci = np.percentile(te_bt, (2.5,97.5))
-    pval = 2*min((te_bt<0).mean(), (te_bt>0).mean())
+    robust_std = np.median(np.abs(te_bt-np.median(te_bt)))*1.4826
+    hist = KernelDensity(bandwidth=robust_std*0.2).fit(te_bt.reshape(-1,1))
+    xx = np.linspace(min(-10,te_bt.min()), max(10,te_bt.max()), 10000)
+    yy = np.exp(hist.score_samples(xx.reshape(-1,1)))
+    pval = 2*min(yy[xx>0].sum()/yy.sum(), yy[xx<0].sum()/yy.sum())
     return te, ci, pval, Y_A0, Y_A1
 
 
@@ -251,7 +260,11 @@ def msm(A, L, Y, random_state=None, verbose=False):
     te, Y_A0, Y_A1 = res[0]
     te_bt = np.array([x[0] for x in res[1:]])
     ci = np.percentile(te_bt, (2.5,97.5))
-    pval = 2*min((te_bt<0).mean(), (te_bt>0).mean())
+    robust_std = np.median(np.abs(te_bt-np.median(te_bt)))*1.4826
+    hist = KernelDensity(bandwidth=robust_std*0.2).fit(te_bt.reshape(-1,1))
+    xx = np.linspace(min(-10,te_bt.min()), max(10,te_bt.max()), 10000)
+    yy = np.exp(hist.score_samples(xx.reshape(-1,1)))
+    pval = 2*min(yy[xx>0].sum()/yy.sum(), yy[xx<0].sum()/yy.sum())
     return te, ci, pval, Y_A0, Y_A1  # not per-sample prediction
 
 
@@ -285,6 +298,10 @@ def dr(A, L, Y, random_state=None, verbose=False):
     te, Y_A0, Y_A1 = res[0]
     te_bt = np.array([x[0] for x in res[1:]])
     ci = np.percentile(te_bt, (2.5,97.5))
-    pval = 2*min((te_bt<0).mean(), (te_bt>0).mean())
+    robust_std = np.median(np.abs(te_bt-np.median(te_bt)))*1.4826
+    hist = KernelDensity(bandwidth=robust_std*0.2).fit(te_bt.reshape(-1,1))
+    xx = np.linspace(min(-10,te_bt.min()), max(10,te_bt.max()), 10000)
+    yy = np.exp(hist.score_samples(xx.reshape(-1,1)))
+    pval = 2*min(yy[xx>0].sum()/yy.sum(), yy[xx<0].sum()/yy.sum())
     return te, ci, pval, Y_A0, Y_A1
 

@@ -14,12 +14,12 @@ def main(control_AHI):
             #'ipw',
             #'matching',
             #'msm',
-            'dr']#TODO'dml', 'tmle'...
+            'dr'
+    ]#TODO'dml', 'tmle'...
     random_state = 2023
 
     df = pd.read_excel('dataset.xlsx')
-    df['A_AF_ECG'] = ((df.A_AF_history.fillna(0).values+df.A_AF_ECG.values)>0).astype(int)
-    df = df.drop(columns=['M_AHI4']) # use AHI@3% only
+    #df['A_AF_ECG'] = ((df.A_AF_history.fillna(0).values+df.A_AF_ECG.values)>0).astype(int)
 
     A_col = 'A_AF_ECG'
     L_cols = [x for x in df.columns if x.startswith('L_')]
@@ -68,8 +68,10 @@ def main(control_AHI):
             Y_As[(Y_col,method)] = [Y0,Y1]
 
     results = pd.concat(results, axis=0, ignore_index=True)
-    results['sig_bonf'] = (results.pval<0.05/len(results)).astype(int)
-    results['sig_fdr_bh'] = multipletests(results.pval,method='fdr_bh')[0].astype(int)
+    results['sig_bonf'] = (results.pval<0.05/len(Y_cols)).astype(int)
+    for method in methods:
+        ids = results.method==method
+        results.loc[ids, 'sig_fdr_bh'] = multipletests(results.pval[ids].values, method='fdr_bh')[0].astype(int)
     results = results.sort_values('pval', ignore_index=True)
     print(results)
 
