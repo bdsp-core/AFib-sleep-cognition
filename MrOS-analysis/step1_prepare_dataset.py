@@ -31,12 +31,6 @@ def main():
     #feat_cols.remove('log_CPC_vl2lh_XueSong')
     df_vs1_sleep = df_vs1_sleep.rename(columns={x:'M_'+x for x in feat_cols})
 
-    # add beta band power
-    for stage in ['W','R','N1','N2','N3','N2_N3']:
-        df_vs1_sleep[f'M_bp_beta_rel_mean_{stage}_C'] = 1-df_vs1_sleep[f'M_bp_delta_rel_mean_{stage}_C']-df_vs1_sleep[f'M_bp_theta_rel_mean_{stage}_C']-df_vs1_sleep[f'M_bp_alpha_rel_mean_{stage}_C']
-        #assert np.all(df_vs1_sleep[f'M_bp_beta_rel_mean_{stage}_C']>0)
-        print(stage, df_vs1_sleep[f'M_bp_beta_rel_mean_{stage}_C'].min())
-
 
     """ outcomes
     'vstbs', 'v4tbs', 'v2tbs', 'v3tbs',
