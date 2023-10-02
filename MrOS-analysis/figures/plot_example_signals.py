@@ -16,7 +16,7 @@ from matplotlib.gridspec import GridSpec
 import seaborn as sns
 sns.set_style('ticks')
 from myfunctions_psg import *
-from pattern_detection import *
+#from pattern_detection import *
 
 
 def main(display_type):
@@ -167,7 +167,7 @@ def main(display_type):
                 }, ff)
         
 
-    figsize = (12,7.5)
+    figsize = (12,7)
     save_name = 'example_signals'
     colors = {0:'b', 1:'r'}
     labels = {0:'AFib-', 1:'AFib+'}
@@ -175,8 +175,8 @@ def main(display_type):
     plt.close()
     fig = plt.figure(figsize=figsize)
     gs = fig.add_gridspec(2,2,width_ratios=[5,3])
-    gs_psg = {0:gs[0,0].subgridspec(3,1,height_ratios=[5,10,6],hspace=0.01),
-              1:gs[1,0].subgridspec(3,1,height_ratios=[5,10,6],hspace=0.01)}
+    gs_psg = {0:gs[0,0].subgridspec(3,1,height_ratios=[5,10,5],hspace=0.01),
+              1:gs[1,0].subgridspec(3,1,height_ratios=[5,10,5],hspace=0.01)}
     gs_spec = gs[0,1].subgridspec(2,3)
     gs_sp   = gs[1,1].subgridspec(2,1,hspace=0,wspace=0)
 
@@ -192,7 +192,7 @@ def main(display_type):
             xticklabels.append(xx)
         age = df.L_VSAGE1.iloc[example_ids[a]]
         BMI = df.L_HWBMI.iloc[example_ids[a]]
-        AHI = df.M_AHI3.iloc[example_ids[a]]
+        AHI = df.L_AHI3.iloc[example_ids[a]]
         
         # plot hypnogram
         ax = fig.add_subplot(gs_psg[a][0,0]); ax0 = ax
@@ -241,54 +241,54 @@ def main(display_type):
     # stage-wise spectrum
 
     for si, (stagenum,stage) in enumerate(zip([3,2,1,4,5], ['N1','N2','N3','R','W'])):
-        gs_spec_ = gs_spec[si//3,si%3].subgridspec(2,1,hspace=0)
+        gs_spec_ = gs_spec[si//3,si%3].subgridspec(1,1,hspace=0)
         if si==0:
             ax = fig.add_subplot(gs_spec_[0,0])
             ax0 = ax
         else:
             ax = fig.add_subplot(gs_spec_[0,0], sharex=ax0, sharey=ax0)
-        ax2 = fig.add_subplot(gs_spec_[1,0], sharex=ax)
+        #ax2 = fig.add_subplot(gs_spec_[1,0], sharex=ax)
         for a in As:
             spec_abs = specs_db[a][sleep_stages[a]==stagenum].mean(axis=(0,1))
             aa = np.power(10, specs_db[a]/10)
             aa = aa/aa.sum(axis=2, keepdims=True)
-            spec_rel = aa[sleep_stages[a]==stagenum].mean(axis=(0,1))
-            spec_rel = np.log(spec_rel)
             ax.plot(freqs[a], spec_abs, c=colors[a], lw=1.5, alpha=0.75)
-            ax2.plot(freqs[a], spec_rel, c=colors[a], lw=1.5, alpha=0.75, ls='--')
+            #spec_rel = aa[sleep_stages[a]==stagenum].mean(axis=(0,1))
+            #spec_rel = np.log(spec_rel)
+            #ax2.plot(freqs[a], spec_rel, c=colors[a], lw=1.5, alpha=0.75, ls='--')
         ax.text(0.1,0.98,stage,ha='left',va='top',transform=ax.transAxes)
         if si==0:
             ax.text(-0.08, 1, 'c', ha='right', va='top', transform=ax.transAxes, fontweight='bold', fontsize=14)
         ax.set_xlim(freqs[0].min(), freqs[0].max())
         #ax.set_xscale('log')
         ax.set_xticks([1,5,10,13,20])
-        plt.setp(ax.get_xticklabels(), visible=False)
+        #plt.setp(ax.get_xticklabels(), visible=False)
         ax.set_xlim(0,20)
         ax.xaxis.grid(True)
-        ax2.set_xticks([1,5,10,13,20])
-        ax2.xaxis.grid(True)
+        #ax2.set_xticks([1,5,10,13,20])
+        #ax2.xaxis.grid(True)
         #if si%3==0:
         #    #ax.set_ylabel('PSD (dB)')
         #    pass
         #else:
         plt.setp(ax.get_ylabel(), visible=False)
         plt.setp(ax.get_yticklabels(), visible=False)
-        plt.setp(ax2.get_ylabel(), visible=False)
-        plt.setp(ax2.get_yticklabels(), visible=False)
+        #plt.setp(ax2.get_ylabel(), visible=False)
+        #plt.setp(ax2.get_yticklabels(), visible=False)
         if si//3==1:
             #ax.set_xlabel('freq (Hz)')
-            pass
+            ax.set_xticks([1,5,10,13,20])
         else:
             plt.setp(ax.get_xlabel(), visible=False)
             plt.setp(ax.get_xticklabels(), visible=False)
-            plt.setp(ax2.get_xlabel(), visible=False)
-            plt.setp(ax2.get_xticklabels(), visible=False)
+            #plt.setp(ax2.get_xlabel(), visible=False)
+            #plt.setp(ax2.get_xticklabels(), visible=False)
         sns.despine()
     ax = fig.add_subplot(gs_spec[1,2])
     for a in As:
         ax.plot([2,3], [3,4], c=colors[a], lw=1.5, label=f'{labels[a]} abs')
-    for a in As:
-        ax.plot([2,3], [3,4], c=colors[a], lw=1.5, label=f'{labels[a]} rel', ls='--')
+    #for a in As:
+    #    ax.plot([2,3], [3,4], c=colors[a], lw=1.5, label=f'{labels[a]} rel', ls='--')
     ax.legend(frameon=False, loc='center')
     ax.set_xlim(0,1)
     ax.axis('off')
@@ -324,7 +324,7 @@ def main(display_type):
                 ax.plot(sp_tt, sp_wave, c=colors[a], lw=0.5)
             if j==0 and a==0:
                 ax.text(-0.08, 1, 'd', ha='right', va='top', transform=ax.transAxes, fontweight='bold', fontsize=14)
-            ax.set_xlim(-1.2,1.2)
+            ax.set_xlim(-1.25,1.25)
             ax.set_ylim(-50,50)
             ax.axis('off')
 

@@ -14,7 +14,19 @@ import statsmodels.api as sm
 R_path = 'Rscript'
 
 
-def matching(A, L, Y, caliper, random_state=None, verbose=False):
+def get_pval_kerneldensity(vals, h0=0, two_sided=True):
+    assert not np.any(np.isnan(vals))
+    robust_std = np.nanmedian(np.abs(vals-np.median(vals)))*1.4826
+    hist = KernelDensity(bandwidth=robust_std*0.2).fit(vals.reshape(-1,1))
+    xx = np.linspace(min(-10,vals.min()), max(10,vals.max()), 10000)
+    yy = np.exp(hist.score_samples(xx.reshape(-1,1)))
+    pval = min(yy[xx>h0].sum()/yy.sum(), yy[xx<h0].sum()/yy.sum())
+    if two_sided:
+        pval *= 2
+    return pval
+
+
+def matching(Y, A, L, caliper, random_state=None, verbose=False):
     folder = os.getcwd()
     now = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
 
@@ -159,8 +171,8 @@ write.csv(yp, file="{resultpath2}", row.names=FALSE)
             return ypmean, np.percentile(yp, (lb,ub), axis=0)
 
 
-def adj_bart(A, L, Y, random_state=None, verbose=False):
-    n_jobs = 16#8
+def adj_bart(Y, A, L, random_state=None, verbose=False):
+    n_jobs = 8
     N = len(A)
 
     model_Y_AL = MyBartRegressor(n_tree=100, R_path=R_path, n_jobs=n_jobs, random_state=random_state, verbose=verbose)
@@ -178,41 +190,69 @@ def adj_bart(A, L, Y, random_state=None, verbose=False):
     te = Y_A1.mean() - Y_A0.mean()
     te_bt = Y_A1_bt - Y_A0_bt
     ci = np.percentile(te_bt, (2.5,97.5), axis=0)
-    robust_std = np.median(np.abs(te_bt-np.median(te_bt)))*1.4826
-    hist = KernelDensity(bandwidth=robust_std*0.2).fit(te_bt.reshape(-1,1))
-    xx = np.linspace(min(-10,te_bt.min()), max(10,te_bt.max()), 10000)
-    yy = np.exp(hist.score_samples(xx.reshape(-1,1)))
-    pval = 2*min(yy[xx>0].sum()/yy.sum(), yy[xx<0].sum()/yy.sum())
+    pval = get_pval_kerneldensity(te_bt)
     model_Y_AL.clear()
     return te, ci, pval, Y_A0, Y_A1
 
 
-def adj_linreg(A, L, Y, random_state=None, verbose=False):
+def adj_linreg(Y, A, L, L_interaction_ids=None, random_state=None, verbose=False):
     N = len(A)
-    model_Y_AL = sm.OLS(Y,np.c_[A,L,np.ones(N)])
-    res = model_Y_AL.fit()
-    te =  res.params[0]
-    ci =  res.conf_int().values[0]
-    pval =  res.pvalues[0]
-    Y_A0 = res.predict(np.c_[np.zeros(N),L,np.ones(N)])
-    Y_A1 = res.predict(np.c_[np.ones(N),L,np.ones(N)])
+    if L_interaction_ids is None:
+        model_Y_AL = sm.OLS(Y,np.c_[A,L,np.ones(N)])
+        res = model_Y_AL.fit()
+        te =  res.params[0]
+        ci =  res.conf_int().values[0]
+        pval =  res.pvalues[0]
+        Y_A0 = res.predict(np.c_[np.zeros(N),L,np.ones(N)])
+        Y_A1 = res.predict(np.c_[np.ones(N),L,np.ones(N)])
+
+    else:
+        Nbt = 1000
+        n_jobs = 8
+        np.random.seed(random_state)
+        def _func(bti):
+            if bti==0:
+                Abt = A
+                Lbt = L
+                Ybt = Y
+            else:
+                ids = np.random.choice(N,N,replace=True)
+                Abt = A[ids]
+                Lbt = L[ids]
+                Ybt = Y[ids]
+            AL = Abt*Lbt[:,L_interaction_ids]
+            model = LinearRegression().fit(np.c_[Abt,Lbt,AL], Ybt)
+            AL0 = np.zeros(N)*Lbt[:,L_interaction_ids]
+            Y_A0 = model.predict(np.c_[np.zeros(N),Lbt,AL0])
+            AL1 = np.ones(N)*Lbt[:,L_interaction_ids]
+            Y_A1 = model.predict(np.c_[np.ones(N),Lbt,AL1])
+            return Y_A1.mean() - Y_A0.mean(), Y_A0, Y_A1
+        with Parallel(n_jobs=n_jobs, verbose=False) as par:
+            res = par(delayed(_func)(bti) for bti in tqdm(range(Nbt+1), disable=not verbose))
+        te, Y_A0, Y_A1 = res[0]
+        te_bt = np.array([x[0] for x in res[1:]])
+        ci = np.percentile(te_bt, (2.5,97.5))
+        pval = get_pval_kerneldensity(te_bt)
+
     return te, ci, pval, Y_A0, Y_A1
 
 
-def ipw(A, L, Y, random_state=None, verbose=False):
+def ipw(Y, A, L, random_state=None, verbose=False):
     Nbt = 1000
-    n_jobs = 16#8
+    n_jobs = 8
     np.random.seed(random_state)
     N = len(A)
     A = A.values; L = L.values; Y = Y.values
     def _func(bti):
         if bti==0:
-            ids = np.arange(N)
+            Abt = A
+            Lbt = L
+            Ybt = Y
         else:
             ids = np.random.choice(N,N,replace=True)
-        Abt = A[ids]
-        Lbt = L[ids]
-        Ybt = Y[ids]
+            Abt = A[ids]
+            Lbt = L[ids]
+            Ybt = Y[ids]
         pmodel = LogisticRegression(penalty=None, max_iter=10000).fit(Lbt,Abt)
         Ap = pmodel.predict_proba(Lbt)[:,1]
         Y_A1 = Ybt*(Abt==1).astype(float)/Ap
@@ -223,28 +263,26 @@ def ipw(A, L, Y, random_state=None, verbose=False):
     te, Y_A0, Y_A1 = res[0]
     te_bt = np.array([x[0] for x in res[1:]])
     ci = np.percentile(te_bt, (2.5,97.5))
-    robust_std = np.median(np.abs(te_bt-np.median(te_bt)))*1.4826
-    hist = KernelDensity(bandwidth=robust_std*0.2).fit(te_bt.reshape(-1,1))
-    xx = np.linspace(min(-10,te_bt.min()), max(10,te_bt.max()), 10000)
-    yy = np.exp(hist.score_samples(xx.reshape(-1,1)))
-    pval = 2*min(yy[xx>0].sum()/yy.sum(), yy[xx<0].sum()/yy.sum())
+    pval = get_pval_kerneldensity(te_bt)
     return te, ci, pval, Y_A0, Y_A1
 
 
-def msm(A, L, Y, random_state=None, verbose=False):
+def msm(Y, A, L, random_state=None, verbose=False):
     Nbt = 1000
-    n_jobs = 16#8
+    n_jobs = 8
     np.random.seed(random_state)
     N = len(A)
     A = A.values; L = L.values; Y = Y.values
     def _func(bti):
         if bti==0:
-            ids = np.arange(N)
+            Abt = A
+            Lbt = L
+            Ybt = Y
         else:
             ids = np.random.choice(N,N,replace=True)
-        Abt = A[ids]
-        Lbt = L[ids]
-        Ybt = Y[ids]
+            Abt = A[ids]
+            Lbt = L[ids]
+            Ybt = Y[ids]
 
         pmodel = LogisticRegression(penalty=None, max_iter=10000).fit(Lbt,Abt)
         Apred = pmodel.predict_proba(Lbt)
@@ -260,36 +298,42 @@ def msm(A, L, Y, random_state=None, verbose=False):
     te, Y_A0, Y_A1 = res[0]
     te_bt = np.array([x[0] for x in res[1:]])
     ci = np.percentile(te_bt, (2.5,97.5))
-    robust_std = np.median(np.abs(te_bt-np.median(te_bt)))*1.4826
-    hist = KernelDensity(bandwidth=robust_std*0.2).fit(te_bt.reshape(-1,1))
-    xx = np.linspace(min(-10,te_bt.min()), max(10,te_bt.max()), 10000)
-    yy = np.exp(hist.score_samples(xx.reshape(-1,1)))
-    pval = 2*min(yy[xx>0].sum()/yy.sum(), yy[xx<0].sum()/yy.sum())
+    pval = get_pval_kerneldensity(te_bt)
     return te, ci, pval, Y_A0, Y_A1  # not per-sample prediction
 
 
-def dr(A, L, Y, random_state=None, verbose=False):
+def dr(Y, A, L, L_interaction_ids=None, random_state=None, verbose=False):
     Nbt = 1000
-    n_jobs = 16#8
+    n_jobs = 8
     np.random.seed(random_state)
     N = len(A)
-    A = A.values; L = L.values; Y = Y.values
     def _func(bti):
         if bti==0:
-            ids = np.arange(N)
+            Abt = A
+            Lbt = L
+            Ybt = Y
         else:
             ids = np.random.choice(N,N,replace=True)
-        Abt = A[ids]
-        Lbt = L[ids]
-        Ybt = Y[ids]
+            Abt = A[ids]
+            Lbt = L[ids]
+            Ybt = Y[ids]
 
         pmodel = LogisticRegression(penalty=None, max_iter=10000).fit(Lbt,Abt)
-        ymodel = LinearRegression().fit(np.c_[Abt,Lbt], Ybt)
-        #ymodel = MyBartRegressor(n_tree=100, R_path=R_path, n_jobs=n_jobs, random_state=random_state, verbose=verbose).fit(np.c_[Abt,Lbt],Ybt)
-
         Ap = pmodel.predict_proba(Lbt)
-        yp0 = ymodel.predict(np.c_[np.zeros(N),Lbt])
-        yp1 = ymodel.predict(np.c_[np.ones(N),Lbt])
+
+        if L_interaction_ids is None:
+            ymodel = LinearRegression().fit(np.c_[Abt,Lbt], Ybt)
+            #ymodel = MyBartRegressor(n_tree=100, R_path=R_path, n_jobs=n_jobs, random_state=random_state, verbose=verbose).fit(np.c_[Abt,Lbt],Ybt)
+            yp0 = ymodel.predict(np.c_[np.zeros(N),Lbt])
+            yp1 = ymodel.predict(np.c_[np.ones(N),Lbt])
+        else:
+            AL = Abt*Lbt[:,L_interaction_ids]
+            ymodel = LinearRegression().fit(np.c_[Abt,Lbt,AL], Ybt)
+            AL0 = np.zeros(N)*Lbt[:,L_interaction_ids]
+            yp0 = ymodel.predict(np.c_[np.zeros(N),Lbt,AL0])
+            AL1 = np.ones(N)*Lbt[:,L_interaction_ids]
+            yp1 = ymodel.predict(np.c_[np.ones(N),Lbt,AL1])
+
         Y_A0 = (Ybt-yp0)*(Abt==0).astype(float)/Ap[:,0] + yp0
         Y_A1 = (Ybt-yp1)*(Abt==1).astype(float)/Ap[:,1] + yp1
         return Y_A1.mean()-Y_A0.mean(), Y_A0, Y_A1
@@ -297,11 +341,7 @@ def dr(A, L, Y, random_state=None, verbose=False):
         res = par(delayed(_func)(bti) for bti in tqdm(range(Nbt+1), disable=not verbose))
     te, Y_A0, Y_A1 = res[0]
     te_bt = np.array([x[0] for x in res[1:]])
-    ci = np.percentile(te_bt, (2.5,97.5))
-    robust_std = np.median(np.abs(te_bt-np.median(te_bt)))*1.4826
-    hist = KernelDensity(bandwidth=robust_std*0.2).fit(te_bt.reshape(-1,1))
-    xx = np.linspace(min(-10,te_bt.min()), max(10,te_bt.max()), 10000)
-    yy = np.exp(hist.score_samples(xx.reshape(-1,1)))
-    pval = 2*min(yy[xx>0].sum()/yy.sum(), yy[xx<0].sum()/yy.sum())
+    ci = np.nanpercentile(te_bt, (2.5,97.5))
+    pval = get_pval_kerneldensity(te_bt)
     return te, ci, pval, Y_A0, Y_A1
 

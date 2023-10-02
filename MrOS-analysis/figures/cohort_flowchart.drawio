@@ -1,0 +1,64 @@
+<mxfile host="app.diagrams.net" modified="2023-09-30T16:53:22.425Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36" etag="-ToPXAiW7-XTuMoy1YjS" version="21.7.4" type="device">
+  <diagram name="Page-1" id="0loTJHVrAW2eTaUWdIni">
+    <mxGraphModel dx="794" dy="456" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Nm1EQGvSXjcTZhqEGOLK-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="Nm1EQGvSXjcTZhqEGOLK-1" target="Nm1EQGvSXjcTZhqEGOLK-2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Nm1EQGvSXjcTZhqEGOLK-1" value="2,911 participants in the sleep visit 1 from MrOS" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="198" y="100" width="105" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Nm1EQGvSXjcTZhqEGOLK-2" value="2,571" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="198" y="195" width="105" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Nm1EQGvSXjcTZhqEGOLK-4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="251" y="171" as="sourcePoint" />
+            <mxPoint x="314" y="170.9999999999999" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Nm1EQGvSXjcTZhqEGOLK-6" value="&lt;ul&gt;&lt;li&gt;&lt;span style=&quot;background-color: initial;&quot;&gt;data loss in any part of PSG&lt;/span&gt;&lt;/li&gt;&lt;li&gt;&lt;span style=&quot;background-color: initial;&quot;&gt;unreliable scoring of wake/sleep&lt;/span&gt;&lt;/li&gt;&lt;li&gt;&lt;span style=&quot;background-color: initial;&quot;&gt;no sleep scoring available&lt;/span&gt;&lt;/li&gt;&lt;li&gt;&lt;span style=&quot;background-color: initial;&quot;&gt;incorrect PSG channel name&lt;br&gt;&lt;/span&gt;&lt;/li&gt;&lt;/ul&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="290" y="118" width="225" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="Nm1EQGvSXjcTZhqEGOLK-8" value="2,471" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="198" y="270" width="105" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Nm1EQGvSXjcTZhqEGOLK-9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="251" y="245" as="sourcePoint" />
+            <mxPoint x="314" y="244.9999999999999" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Nm1EQGvSXjcTZhqEGOLK-10" value="&lt;ul&gt;&lt;li&gt;cannot evaluate ECG&lt;/li&gt;&lt;ul&gt;&lt;li&gt;artifact on the ECG&lt;/li&gt;&lt;li&gt;&lt;span style=&quot;background-color: initial;&quot;&gt;pacemaker artifact&lt;/span&gt;&lt;br&gt;&lt;/li&gt;&lt;li style=&quot;border-color: var(--border-color);&quot;&gt;problem opening raw data&lt;/li&gt;&lt;/ul&gt;&lt;/ul&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="290" y="198" width="225" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="Nm1EQGvSXjcTZhqEGOLK-11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="Nm1EQGvSXjcTZhqEGOLK-2" target="Nm1EQGvSXjcTZhqEGOLK-8" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="208" y="225" as="sourcePoint" />
+            <mxPoint x="208" y="270" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Nm1EQGvSXjcTZhqEGOLK-12" value="119 AFib+" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="140" y="340" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Nm1EQGvSXjcTZhqEGOLK-13" value="2,352 AFib-" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="270" y="340" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Nm1EQGvSXjcTZhqEGOLK-14" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="Nm1EQGvSXjcTZhqEGOLK-8" target="Nm1EQGvSXjcTZhqEGOLK-12" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="245" y="235" as="sourcePoint" />
+            <mxPoint x="245" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Nm1EQGvSXjcTZhqEGOLK-15" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="Nm1EQGvSXjcTZhqEGOLK-8" target="Nm1EQGvSXjcTZhqEGOLK-13" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="245" y="310" as="sourcePoint" />
+            <mxPoint x="165" y="346" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

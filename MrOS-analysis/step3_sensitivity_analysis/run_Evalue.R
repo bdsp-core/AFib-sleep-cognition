@@ -1,8 +1,9 @@
 library(reticulate)
 library(EValue)
+library(lsr)
 
 folder <- 'D:\\projects\\AFib-sleep-cognition\\MrOS-analysis'
-suffix <- '_notholdAHI2'
+suffix <- '_age_interaction'
 
 data.path <- file.path(folder, sprintf('AF_as_exposure_potential_outcomes%s.pickle', suffix))
 dat <- py_load_object(data.path)
